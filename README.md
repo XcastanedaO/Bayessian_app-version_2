@@ -15,3 +15,5 @@ This application has the graphic functions to plot the following scenarios:
 - Poisson model
 
 - Binomial model
+
+It's allowed in this version to read data frames to graph the likelihood distribution.
