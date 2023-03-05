@@ -54,7 +54,7 @@ fy_ivgamma <- function(a,b,theta,n,s_2){
   veros <- rnorm(10000,mean = theta,sd = sigma_n)
   dens_vero <- density(veros)
   veros_m = sample(veros, n, replace = TRUE)
-  v_1=sum((veros_m-theta)^2)/n # usado para calcular los parámetros alpha y beta de la distribuiones a priori y posterior de sigma^2
+  v_1=sum((veros_m-theta)^2)/n # usado para calcular los parámetros alpha y beta de la   ibuiones a priori y posterior de sigma^2
   
   v0_n = (v0+n)/2 # Cálculo del parámetro alpha de la distribución gamma inversa a priori de sigma^2
   v_n = (n*v_1+v0*sigma0_2)/2 # usado para calcular el parámetro beta de la distribución posterior de sigma2
@@ -185,7 +185,7 @@ f_norm_uni = function(y_barn, S_y, mu0, kappa_0, alpha_0, beta_0, n){
 }
 
 # Función para graficar modelo conjugado binomial
-fy_bin = function(n_ensayos,a,b,y){
+fy_bin = function(datos = NULL, n_ensayos,a,b,y, escenario){
   # y: número de éxitos en los n ensayos bernoulli
   
   # Parámetros verosimilitud:
@@ -267,24 +267,36 @@ fy_bin = function(n_ensayos,a,b,y){
 }
 
 # Función para graficar modelo conjugado poisson
-fx_pois = function(nobs, theta_m, alpha_0, beta_0){
-  ## Likelihood:
-  like_pois_original <- rpois(n = 10000, lambda = theta_m)
-  
+fx_pois = function(nobs = 0,datos = NULL,theta_m = 0,alpha_0,beta_0,scenario){
+
+  if(scenario == "sim_datos"){
+    ## Likelihood:
+    like_pois_original <- rpois(n = 10000, lambda = theta_m)
+    datos_like <- data.frame(x = like_pois_original, y = dpois(like_pois_original,theta_m))
+    
+    #Posterior parameters
+    like_pois <- sample(like_pois_original,nobs, replace = TRUE)
+    alpha_pos <- sum(like_pois) + alpha_0
+    beta_pos <- length(like_pois) + beta_0
+  }else if(scenario == "ing_datos"){
+    theta_m = mean(datos)
+    datos_like <- data.frame(x = datos, y = dpois(datos,lambda = theta_m))
+    
+    
+    #Posterior parameters
+    alpha_pos <- sum(datos) + alpha_0 
+    beta_pos <- length(datos) + beta_0
+  }
+
   ## Prior:
   prior_pois <- rgamma(n = 10000, shape = alpha_0, rate = beta_0)
   
   ## Posterior:
-  like_pois <- sample(like_pois_original,nobs, replace = TRUE)
-  alpha_pos <- sum(like_pois) + alpha_0
-  beta_pos <- length(like_pois) + beta_0
   post_pois <- rgamma(n = 10000, shape = alpha_pos, rate = beta_pos)
   
   ### Graphics
   ## Likelihood:
-  datos_like <- data.frame(x = like_pois_original, y = dpois(like_pois_original,theta_m))
-  
-  likelihood <- ggplot(data = data.frame(x =  datos_like[ ,1],
+    likelihood <- ggplot(data = data.frame(x =  datos_like[ ,1],
                                          y =  datos_like[ ,2],
                                          yend = rep(0,length(datos_like[,1]))),
                        aes(x = x, y = y, xend = x, yend = yend)) +

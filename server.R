@@ -39,7 +39,18 @@ shinyServer(function(input, output) {
               )
           )
         }else if(input$modelo_conj == "Binomial"){
-
+          fluidRow(
+            column(12,
+              h5("Información muestral"),
+              numericInput("num_ensayos",HTML("Ingrese número de ensayos"),
+                value = 10,
+                min = 0),
+              numericInput("num_exitos",HTML("Ingrese número de éxitos"),
+                value = 4,
+                min = 0)
+            )
+            
+          )
         }else if(input$modelo_conj == "Normal"){
           if(input$esce_normal_med == "Conocida" & input$esce_normal_var == "Desconocida"){
           }else if(input$esce_normal_med == "Desconocida" & input$esce_normal_var == "Conocida"){
@@ -61,9 +72,10 @@ shinyServer(function(input, output) {
         )
       })
       
-      # output$parametros_datos <- renderUI({
-      #   if(input$modelo_conj == "Poisson"){}else if(input$modelo_conj == "Binomial"){}else if(input$modelo_conj == "Normal"){}
-      # })
+      #Ocultar parámetros verosimilitud
+      output$parametros_datos <- renderUI({
+        return(NULL)
+      })
       
     }
   })
@@ -88,7 +100,20 @@ shinyServer(function(input, output) {
                             min=0)
         )
       )
-    }else if(input$modelo_conj == "Binomial"){}
+    }else if(input$modelo_conj == "Binomial"){
+      fluidRow(
+        column(6,
+          h5("Parámetros de distribución apriori"),
+          numericInput("Alpha_bin",HTML("Ingrese  &alpha;"),
+            value = 1,
+            min = 0),
+          numericInput("Beta_bin",
+            HTML("Ingrese  &beta;"),
+            value = 1,
+            min=0)
+        )
+      )
+    }
   })
   
   #Leer y guardar datos
@@ -146,9 +171,11 @@ shinyServer(function(input, output) {
       output$distPlot<- renderPlotly({
         if(input$modelo_conj == "Poisson"){
           pois_vero = fx_pois(nobs=input$input_numObservaciones, theta_m=input$theta, alpha_0=input$Alpha_pois,
-                              beta_0=input$Beta_pois)
+                              beta_0=input$Beta_pois,scenario = input$esce_datos)
           ggplotly(pois_vero[[1]])
         }else if(input$modelo_conj == "Binomial"){
+          bin_vero = fy_bin(n_ensayos=input$num_ensayos, a=input$Alpha_bin, b=input$Beta_bin, y=input$num_exitos)
+          ggplotly(bin_vero[[1]])
         }else if(input$modelo_conj == "Normal"){
           if(input$esce_normal_med == "Conocida" & input$esce_normal_var == "Desconocida"){
           }else if(input$esce_normal_med == "Desconocida" & input$esce_normal_var == "Conocida"){
@@ -160,9 +187,11 @@ shinyServer(function(input, output) {
       output$distPlot2 <- renderPlotly({
         if(input$modelo_conj == "Poisson"){
           pois_ap = fx_pois(nobs=input$input_numObservaciones, theta_m=input$theta, alpha_0=input$Alpha_pois,
-                            beta_0=input$Beta_pois)
+                            beta_0=input$Beta_pois,scenario = input$esce_datos)
           ggplotly(pois_ap[[2]])
         }else if(input$modelo_conj == "Binomial"){
+          bin_ap = fy_bin(n_ensayos=input$num_ensayos, a=input$Alpha_bin, b=input$Beta_bin, y=input$num_exitos)
+          ggplotly(bin_ap[[2]])
         }else if(input$modelo_conj == "Normal"){
           if(input$esce_normal_med == "Conocida" & input$esce_normal_var == "Desconocida"){
           }else if(input$esce_normal_med == "Desconocida" & input$esce_normal_var == "Conocida"){
@@ -174,9 +203,11 @@ shinyServer(function(input, output) {
       output$distPlot3 <- renderPlotly({
         if(input$modelo_conj == "Poisson"){
           pois_pos = fx_pois(nobs=input$input_numObservaciones, theta_m=input$theta, alpha_0=input$Alpha_pois,
-                             beta_0=input$Beta_pois)
+                             beta_0=input$Beta_pois,scenario = input$esce_datos)
           ggplotly(pois_pos[[3]])
         }else if(input$modelo_conj == "Binomial"){
+          bin_pos = fy_bin(n_ensayos=input$num_ensayos, a=input$Alpha_bin, b=input$Beta_bin, y=input$num_exitos)
+          ggplotly(bin_pos[[3]])
         }else if(input$modelo_conj == "Normal"){
           if(input$esce_normal_med == "Conocida" & input$esce_normal_var == "Desconocida"){
           }else if(input$esce_normal_med == "Desconocida" & input$esce_normal_var == "Conocida"){
@@ -186,14 +217,13 @@ shinyServer(function(input, output) {
       })
       
     }else if(input$esce_datos == "ing_datos"){
-      cant_datos = length(Base_datos()[[Variable()]])
-      
+
       output$distPlot<- renderPlotly({
         if(input$modelo_conj == "Poisson"){
-          par_theta = mean(Base_datos()[[Variable()]])
-          
-          pois_vero = fx_pois(nobs=cant_datos,theta_m=par_theta,alpha_0=input$Alpha_pois,
-                              beta_0=input$Beta_pois)
+          pois_vero = fx_pois(alpha_0=input$Alpha_pois,
+                              beta_0=input$Beta_pois,
+                              scenario = input$esce_datos,
+                              datos = Base_datos()[[Variable()]])
           ggplotly(pois_vero[[1]])
           
         }else if(input$modelo_conj == "Binomial"){
@@ -208,8 +238,10 @@ shinyServer(function(input, output) {
       output$distPlot2 <- renderPlotly({
         if(input$modelo_conj == "Poisson"){
           par_theta = mean(Base_datos()[[Variable()]])
-          pois_ap = fx_pois(nobs=cant_datos, theta_m=par_theta, alpha_0=input$Alpha_pois,
-                            beta_0=input$Beta_pois)
+          pois_ap = fx_pois(alpha_0=input$Alpha_pois,
+                            beta_0=input$Beta_pois,
+                            scenario = input$esce_datos,
+                            datos = Base_datos()[[Variable()]])
           ggplotly(pois_ap[[2]])
         }else if(input$modelo_conj == "Binomial"){
         }else if(input$modelo_conj == "Normal"){
@@ -223,8 +255,10 @@ shinyServer(function(input, output) {
       output$distPlot3 <- renderPlotly({
         if(input$modelo_conj == "Poisson"){
           par_theta = mean(Base_datos()[[Variable()]])
-          pois_pos = fx_pois(nobs=cant_datos, theta_m=par_theta, alpha_0=input$Alpha_pois,
-                             beta_0=input$Beta_pois)
+          pois_pos = fx_pois(alpha_0=input$Alpha_pois,
+                             beta_0=input$Beta_pois,
+                             scenario = input$esce_datos,
+                             datos = Base_datos()[[Variable()]])
           ggplotly(pois_pos[[3]])
         }else if(input$modelo_conj == "Binomial"){
         }else if(input$modelo_conj == "Normal"){
